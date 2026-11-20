@@ -1,0 +1,481 @@
+/* Add your styles here */
+
+/* ---------- Login pages (UC-001, UC-002) ---------- */
+
+.login-view {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vaadin-gap-s);
+  padding: var(--vaadin-padding-m);
+  background: var(--vaadin-background-color);
+}
+
+.login-view__app-name {
+  margin: 0;
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-semibold);
+  color: var(--aura-accent-text-color);
+}
+
+.login-view__tagline {
+  margin: 0;
+  font-size: var(--aura-font-size-s);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.login-view__switch {
+  font-size: var(--aura-font-size-s);
+  color: var(--aura-accent-text-color);
+}
+
+/* ---------- Signed-in pages: header + dashboard ---------- */
+
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--vaadin-background-color);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-m);
+  padding: var(--vaadin-padding-s) var(--vaadin-padding-l);
+  border-bottom: 1px solid var(--vaadin-border-color-secondary);
+  background: var(--aura-surface-color);
+}
+
+.app-header__brand-area {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-l);
+}
+
+.app-header__nav {
+  display: flex;
+  gap: var(--vaadin-gap-m);
+}
+
+.app-header__nav a {
+  font-size: var(--aura-font-size-s);
+  font-weight: var(--aura-font-weight-medium);
+  color: var(--vaadin-text-color-secondary);
+  text-decoration: none;
+}
+
+.app-header__nav a:hover,
+.app-header__nav a[highlight] {
+  color: var(--aura-accent-text-color);
+}
+
+.app-header__app-name {
+  margin: 0;
+  font-size: var(--aura-font-size-l);
+  font-weight: var(--aura-font-weight-semibold);
+  color: var(--aura-accent-text-color);
+}
+
+.app-header__user-area {
+  display: flex;
+  align-items: center;
+  gap: var(--vaadin-gap-s);
+}
+
+.app-header__user {
+  font-size: var(--aura-font-size-s);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.dashboard__content {
+  padding: var(--vaadin-padding-l);
+}
+
+.dashboard__content h2 {
+  margin-top: 0;
+  font-size: var(--aura-font-size-xl);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.dashboard__intro {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-m);
+}
+
+/* Admin dashboard navigation: one card per admin section */
+.admin-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--vaadin-gap-m);
+  max-width: 64rem;
+}
+
+.admin-nav__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--vaadin-gap-s);
+  row-gap: var(--vaadin-gap-xs);
+  align-items: center;
+  align-content: start;
+  padding: var(--vaadin-padding-m);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color);
+  box-shadow: var(--aura-shadow-xs);
+  color: var(--vaadin-text-color);
+  text-decoration: none;
+}
+
+.admin-nav__item:hover,
+.admin-nav__item:focus-visible {
+  border-color: var(--aura-accent-border-color);
+  background: var(--aura-accent-surface);
+}
+
+.admin-nav__item[highlight] {
+  border-color: var(--aura-accent-border-color);
+}
+
+.admin-nav__item vaadin-icon {
+  color: var(--aura-accent-text-color);
+}
+
+.admin-nav__label {
+  font-weight: var(--aura-font-weight-semibold);
+  color: var(--aura-accent-text-color);
+}
+
+.admin-nav__description {
+  grid-column: 2;
+  font-size: var(--aura-font-size-s);
+  color: var(--vaadin-text-color-secondary);
+}
+
+/* ---------- UC-006: Manage clients ---------- */
+
+.manage-clients {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-m);
+  min-height: 0;
+}
+
+.manage-clients__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--vaadin-gap-m);
+}
+
+.manage-clients__toolbar h2 {
+  margin: 0;
+}
+
+.manage-clients__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-l);
+  min-height: 0;
+}
+
+.manage-clients__grid {
+  flex: 1;
+  min-height: 20rem;
+}
+
+.form-card {
+  padding: var(--vaadin-padding-l);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color);
+  box-shadow: var(--aura-shadow-s);
+}
+
+.form-card h3 {
+  margin: 0 0 var(--vaadin-gap-m);
+  font-size: var(--aura-font-size-l);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.form-errors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vaadin-gap-s);
+  margin-bottom: var(--vaadin-gap-m);
+  padding: var(--vaadin-padding-s) var(--vaadin-padding-m);
+  border-radius: var(--vaadin-radius-m);
+  color: var(--aura-red-text);
+  background: color-mix(in srgb, var(--aura-red) 12%, transparent);
+  font-size: var(--aura-font-size-s);
+}
+
+.client-form__account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vaadin-gap-m);
+  margin-top: var(--vaadin-gap-l);
+  padding-top: var(--vaadin-padding-m);
+  border-top: 1px solid var(--vaadin-border-color-secondary);
+}
+
+.client-form__account > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-xs);
+}
+
+.client-form__account-title {
+  font-size: var(--aura-font-size-s);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.client-form__account-text {
+  font-size: var(--aura-font-size-xs);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.client-form__buttons {
+  display: flex;
+  gap: var(--vaadin-gap-s);
+  margin-top: var(--vaadin-gap-l);
+}
+
+/* Desktop: grid and form side by side */
+@media (min-width: 1024px) {
+  .manage-clients__body {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .manage-clients__grid {
+    min-height: 32rem;
+  }
+
+  .client-form {
+    flex: 0 0 26rem;
+  }
+}
+
+.default-password-dialog__credentials {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-s);
+  padding: var(--vaadin-padding-m);
+  border-radius: var(--vaadin-radius-m);
+  background: var(--vaadin-background-container);
+}
+
+.default-password-dialog__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--vaadin-gap-l);
+}
+
+.default-password-dialog__label {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-s);
+}
+
+.default-password-dialog__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--aura-font-size-m);
+  font-weight: var(--aura-font-weight-semibold);
+  user-select: all;
+}
+
+.default-password-dialog__note {
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-s);
+}
+
+/* ---------- UC-003: Upload document ---------- */
+
+.upload-form {
+  max-width: 44rem;
+}
+
+.upload-form__file {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-xs);
+  margin-bottom: var(--vaadin-gap-m);
+}
+
+.upload-form__file-label {
+  font-size: var(--aura-font-size-s);
+  font-weight: var(--aura-font-weight-medium);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.upload-form__file-label::after {
+  content: " •";
+  color: var(--aura-accent-text-color);
+}
+
+.upload-form__file-hint {
+  font-size: var(--aura-font-size-xs);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.upload-form__file-error {
+  font-size: var(--aura-font-size-xs);
+  color: var(--aura-red-text);
+}
+
+.upload-form__upload--invalid {
+  outline: 1px solid var(--aura-red);
+  border-radius: var(--vaadin-radius-m);
+}
+
+/* ---------- UC-004: My documents (client) ---------- */
+
+.my-documents__grid {
+  max-width: 60rem;
+}
+
+.my-documents__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-xs);
+  padding-block: var(--vaadin-padding-xs);
+}
+
+.my-documents__item-type {
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.my-documents__item-meta {
+  font-size: var(--aura-font-size-s);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.my-documents__download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vaadin-gap-xs);
+  font-weight: var(--aura-font-weight-medium);
+  color: var(--aura-accent-text-color);
+  text-decoration: none;
+}
+
+.my-documents__download:hover .my-documents__download-text {
+  text-decoration: underline;
+}
+
+/* Phones: icon only, next to the compact summary column */
+@media (max-width: 639px) {
+  .my-documents__download-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+.my-documents__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--vaadin-gap-s);
+  max-width: 36rem;
+  margin: var(--vaadin-gap-xl) auto;
+  padding: var(--vaadin-padding-xl) var(--vaadin-padding-l);
+  border: 1px dashed var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  text-align: center;
+}
+
+.my-documents__empty-icon {
+  color: var(--vaadin-text-color-secondary);
+}
+
+.my-documents__empty h3 {
+  margin: 0;
+  font-size: var(--aura-font-size-l);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.my-documents__empty p {
+  margin: 0;
+  color: var(--vaadin-text-color-secondary);
+  font-size: var(--aura-font-size-s);
+}
+
+/* ---------- UC-007: All documents (admin) ---------- */
+
+.all-documents {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-m);
+  min-height: 0;
+}
+
+.all-documents__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--vaadin-gap-m);
+}
+
+.all-documents__filters vaadin-text-field {
+  flex: 1 1 16rem;
+}
+
+.all-documents__count {
+  font-size: var(--aura-font-size-s);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.all-documents__grid {
+  flex: 1;
+  min-height: 24rem;
+}
+
+.all-documents__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--vaadin-gap-s);
+  padding: var(--vaadin-padding-l);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.all-documents__empty p {
+  margin: 0;
+}
+
+/* Phones: filters stacked full width */
+@media (max-width: 639px) {
+  .all-documents__filters > * {
+    flex: 1 1 100%;
+  }
+}
+
+/* PAN dropdown items on the upload form: PAN with the client name below */
+.upload-form__client {
+  display: flex;
+  flex-direction: column;
+}
+
+.upload-form__client-pan {
+  font-weight: var(--aura-font-weight-medium);
+}
+
+.upload-form__client-name {
+  font-size: var(--aura-font-size-s);
+  color: var(--vaadin-text-color-secondary);
+}
