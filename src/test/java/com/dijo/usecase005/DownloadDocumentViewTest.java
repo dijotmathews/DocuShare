@@ -7,7 +7,6 @@ import com.dijo.document.DocumentService;
 import com.dijo.document.DownloadAuditRepository;
 import com.dijo.document.DownloadOutcome;
 import com.vaadin.browserless.SpringBrowserlessTest;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.notification.Notification;
 import org.junit.jupiter.api.AfterEach;
@@ -21,7 +20,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,15 +46,9 @@ class DownloadDocumentViewTest extends SpringBrowserlessTest {
         SecurityContextHolder.clearContext();
     }
 
-    /** The Download link of every row (last visible grid column). */
-    @SuppressWarnings("unchecked")
+    /** The Download link of every document in the open group tab. */
     private List<Anchor> downloadLinks() {
-        Grid<Object> grid = $(Grid.class).single();
-        int column = (int) grid.getColumns().stream().filter(c -> c.isVisible()).count() - 1;
-        var tester = test(grid);
-        return IntStream.range(0, tester.size())
-                .mapToObj(row -> (Anchor) tester.getCellComponent(row, column))
-                .toList();
+        return $(Anchor.class).all().stream().filter(a -> a.hasClassName("my-documents__download")).toList();
     }
 
     @Test

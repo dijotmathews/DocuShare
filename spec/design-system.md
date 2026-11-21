@@ -116,9 +116,10 @@ Aura computes gap and padding from `--aura-base-size` (unitless, range 12–24).
 |-----------|-------------|-------|
 | `LoginForm` | Login page (`/login`) | Centered on the page under the app name; error messages set via `LoginI18n`; forgot-password button hidden |
 | `Button` | Primary and secondary actions | Primary variant for the main action; tertiary variant for header actions such as Logout |
-| `Grid` | Tabular data display (e.g. client list, a client's documents) | Always enable column sorting; set an empty-state text (or a dedicated empty-state panel); single selection opens the row in the side form; read-only lists collapse to a single summary column below 640px instead of scrolling sideways |
+| `Grid` | Tabular data display (e.g. client list, the admin's document list) | Always enable column sorting; set an empty-state text (or a dedicated empty-state panel); single selection opens the row in the side form; read-only lists collapse to a single summary column below 640px instead of scrolling sideways |
 | `FormLayout` + fields | Add/edit forms in a side panel next to the grid | Mandatory fields show the required indicator; validation runs on the server and errors are shown on the fields plus a summary at the top of the form; a field's error clears as soon as it is edited |
 | `Notification` | Success feedback after saving | Success variant, top-center, about 4 seconds |
+| `TabSheet` | Splitting one list into fixed categories (e.g. the client's Filings / Financials / Computations / Misc) | Each tab label carries a count badge; opens on the first tab with content; an empty tab says so in a plain sentence |
 | `Upload` | Selecting the file on the upload form | Single file, 25 MB max; button relabelled "Select file..." so it can't be confused with the form's "Upload" button |
 | `Select` | Picking from a fixed list (e.g. Document Type) | Placeholder "Select a type"; labels from the enum |
 | `ComboBox` | Picking a record from a searchable list (e.g. the client PAN on the upload form) | Items come from the database; typing filters by every shown attribute (PAN or client name), ignoring case; custom values not allowed; option shows the key with a secondary line |

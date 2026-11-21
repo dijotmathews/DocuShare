@@ -18,7 +18,11 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * The signed-in client's view of their documents (UC-004) and downloads
@@ -40,8 +44,33 @@ public class ClientDocumentService {
         }
     }
 
+    /** One financial year's documents within a group, most recent first. */
+    public record FinancialYearDocuments(int financialYear, List<DocumentSummary> documents) {
+    }
+
     /** The signed-in client and their documents, most recent first (BR-02). */
     public record MyDocuments(String panNumber, String clientName, List<DocumentSummary> documents) {
+
+        /** Number of documents in a group. */
+        public int count(DocumentGroup group) {
+            return (int) documents.stream().filter(d -> d.documentType().group() == group).count();
+        }
+
+        /**
+         * A group's documents by financial year, latest year first (BR-04, BR-05);
+         * within a year, most recent upload first (BR-02).
+         */
+        public List<FinancialYearDocuments> byFinancialYear(DocumentGroup group) {
+            Map<Integer, List<DocumentSummary>> years = new TreeMap<>(Comparator.reverseOrder());
+            documents.stream()
+                    .filter(d -> d.documentType().group() == group)
+                    .sorted(Comparator.comparing(DocumentSummary::uploadedAt).thenComparing(DocumentSummary::id)
+                            .reversed())
+                    .forEach(d -> years.computeIfAbsent(d.financialYear(), y -> new ArrayList<>()).add(d));
+            return years.entrySet().stream()
+                    .map(e -> new FinancialYearDocuments(e.getKey(), List.copyOf(e.getValue())))
+                    .toList();
+        }
     }
 
     /** Receives the file: called once the download is allowed, before any bytes are sent. */

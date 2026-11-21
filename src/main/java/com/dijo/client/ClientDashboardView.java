@@ -2,26 +2,25 @@ package com.dijo.client;
 
 import com.dijo.document.ClientDocumentService;
 import com.dijo.document.ClientDocumentService.DocumentSummary;
+import com.dijo.document.ClientDocumentService.FinancialYearDocuments;
 import com.dijo.document.ClientDocumentService.MyDocuments;
 import com.dijo.document.DocumentDownloadException;
+import com.dijo.document.DocumentGroup;
 import com.dijo.ui.AppHeader;
-import com.dijo.ui.CompactGrid;
-import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridSortOrder;
-import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Section;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.data.provider.SortDirection;
-import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
@@ -30,14 +29,14 @@ import jakarta.annotation.security.RolesAllowed;
 
 import java.time.Clock;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * UC-004: the client's "My Documents" page, shown after login (UC-002). Lists
- * the documents uploaded for the signed-in client's PAN, most recent first.
- * Only accessible to users with role CLIENT.
+ * UC-004: the client's "My Documents" page, shown after login (UC-002). The
+ * documents uploaded for the signed-in client's PAN are shown in tabs per
+ * group (Filings, Financials, Computations, Misc), and inside each tab by
+ * financial year, latest first. Only accessible to users with role CLIENT.
  */
 @Route(value = ClientDashboardView.ROUTE, autoLayout = false)
 @PageTitle("My Documents | DocuShare")
@@ -49,10 +48,12 @@ public class ClientDashboardView extends Main {
 
     private static final DateTimeFormatter UPLOAD_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
     private final ClientDocumentService clientDocumentService;
+    private final DateTimeFormatter uploadDate;
 
     public ClientDashboardView(AuthenticationContext authenticationContext,
                                ClientDocumentService clientDocumentService, Clock clock) {
         this.clientDocumentService = clientDocumentService;
+        this.uploadDate = UPLOAD_DATE.withZone(clock.getZone());
         addClassName("dashboard");
 
         MyDocuments mine = clientDocumentService.findMyDocuments();
@@ -65,57 +66,75 @@ public class ClientDashboardView extends Main {
 
         Div content = new Div(title, intro);
         content.addClassNames("dashboard__content", "my-documents");
-        content.add(mine.documents().isEmpty() ? emptyState() : documentGrid(mine.documents(), clock));
+        content.add(mine.documents().isEmpty() ? emptyState() : groupTabs(mine));
 
         add(new AppHeader(authenticationContext), content);
     }
 
-    private Grid<DocumentSummary> documentGrid(List<DocumentSummary> documents, Clock clock) {
-        DateTimeFormatter uploadDate = UPLOAD_DATE.withZone(clock.getZone());
-        Grid<DocumentSummary> grid = new Grid<>();
-        grid.addClassName("my-documents__grid");
-        grid.addThemeVariants(GridVariant.ROW_STRIPES);
-        grid.setAllRowsVisible(true);
-        List<Grid.Column<DocumentSummary>> wideColumns = new ArrayList<>();
+    /** Step 2: one tab per group, with the number of documents in it. */
+    private TabSheet groupTabs(MyDocuments mine) {
+        TabSheet tabs = new TabSheet();
+        tabs.addClassName("my-documents__tabs");
+        Tab firstWithDocuments = null;
+        for (DocumentGroup group : DocumentGroup.values()) {
+            int count = mine.count(group);
+            Span badge = new Span(String.valueOf(count));
+            badge.addClassName("my-documents__tab-count");
+            badge.getElement().setAttribute("aria-label", count == 1 ? "1 document" : count + " documents");
+            Tab tab = new Tab(new Span(group.label()), badge);
+            tab.setId("tab-" + group.name().toLowerCase(Locale.ROOT));
+            tabs.add(tab, groupContent(group, mine.byFinancialYear(group)));
+            if (firstWithDocuments == null && count > 0) {
+                firstWithDocuments = tab;
+            }
+        }
+        // Open on the first group that has something to show
+        tabs.setSelectedTab(firstWithDocuments);
+        return tabs;
+    }
 
-        wideColumns.add(grid.addColumn(d -> d.documentType().label()).setHeader("Document Type")
-                .setComparator(Comparator.comparing(d -> d.documentType().label()))
-                .setSortable(true).setAutoWidth(true).setFlexGrow(1));
-        wideColumns.add(grid.addColumn(DocumentSummary::assessmentYear).setHeader("Assessment Year")
-                .setComparator(DocumentSummary::assessmentYear).setSortable(true).setAutoWidth(true)
-                .setTextAlign(ColumnTextAlign.END));
-        wideColumns.add(grid.addColumn(DocumentSummary::financialYear).setHeader("Financial Year")
-                .setComparator(DocumentSummary::financialYear).setSortable(true).setAutoWidth(true)
-                .setTextAlign(ColumnTextAlign.END));
-        Grid.Column<DocumentSummary> uploaded = grid.addColumn(d -> uploadDate.format(d.uploadedAt()))
-                .setHeader("Upload Date")
-                .setComparator(Comparator.comparing(DocumentSummary::uploadedAt)
-                        .thenComparing(DocumentSummary::id))
-                .setSortable(true).setAutoWidth(true);
-        wideColumns.add(uploaded);
+    /** Step 3: a group's documents, one section per financial year, latest first. */
+    private Component groupContent(DocumentGroup group, List<FinancialYearDocuments> years) {
+        Div content = new Div();
+        content.addClassName("my-documents__group");
+        if (years.isEmpty()) {
+            Paragraph empty = new Paragraph(group.emptyMessage());
+            empty.addClassName("my-documents__group-empty");
+            content.add(empty);
+            return content;
+        }
+        for (FinancialYearDocuments year : years) {
+            H3 heading = new H3("FY " + yearRange(year.financialYear()));
+            heading.addClassName("my-documents__year");
+            Div list = new Div();
+            list.addClassName("my-documents__list");
+            list.getElement().setAttribute("role", "list");
+            year.documents().forEach(d -> list.add(documentRow(d)));
+            Section section = new Section(heading, list);
+            section.addClassName("my-documents__year-section");
+            content.add(section);
+        }
+        return content;
+    }
 
-        // Phones: one column with the type and, below it, years and upload date
-        Grid.Column<DocumentSummary> compactColumn = grid.addColumn(LitRenderer.<DocumentSummary>of("""
-                        <div class="my-documents__item">
-                          <span class="my-documents__item-type">${item.type}</span>
-                          <span class="my-documents__item-meta">${item.meta}</span>
-                        </div>""")
-                        .withProperty("type", d -> d.documentType().label())
-                        .withProperty("meta", d -> "AY " + d.assessmentYear() + " · FY " + d.financialYear()
-                                + " · " + uploadDate.format(d.uploadedAt())))
-                .setHeader("Document")
-                .setComparator(Comparator.comparing(DocumentSummary::uploadedAt).thenComparing(DocumentSummary::id))
-                .setSortable(true);
+    /** One document: type, assessment year and upload date, and its Download link (UC-005). */
+    private Component documentRow(DocumentSummary document) {
+        Span type = new Span(document.documentType().label());
+        type.addClassName("my-documents__item-type");
+        Span meta = new Span("AY " + yearRange(document.assessmentYear()) + " · Uploaded "
+                + uploadDate.format(document.uploadedAt()));
+        meta.addClassName("my-documents__item-meta");
+        Div text = new Div(type, meta);
+        text.addClassName("my-documents__item");
+        Div row = new Div(text, downloadLink(document));
+        row.addClassName("my-documents__row");
+        row.getElement().setAttribute("role", "listitem");
+        return row;
+    }
 
-        // UC-005: download link per row, shown in both layouts
-        grid.addComponentColumn(this::downloadLink).setHeader("")
-                .setAutoWidth(true).setFlexGrow(0).setTextAlign(ColumnTextAlign.END);
-
-        CompactGrid.install(grid, wideColumns, compactColumn);
-        grid.setItems(documents);
-        // BR-02: most recent first by default, shown by the sort indicator
-        grid.sort(List.of(new GridSortOrder<>(uploaded, SortDirection.DESCENDING)));
-        return grid;
+    /** 2024 → "2024-25": the year a financial or assessment year starts in, as it's usually written. */
+    static String yearRange(int startYear) {
+        return startYear + "-" + String.format("%02d", (startYear + 1) % 100);
     }
 
     /** UC-005 step 1: link that streams the file; failures are reported in a notification. */

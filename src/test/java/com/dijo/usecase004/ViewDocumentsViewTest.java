@@ -2,17 +2,20 @@ package com.dijo.usecase004;
 
 import com.dijo.client.ClientDashboardView;
 import com.dijo.client.ClientService;
-import com.dijo.document.ClientDocumentService.DocumentSummary;
 import com.dijo.document.Document;
+import com.dijo.document.DocumentGroup;
 import com.dijo.document.DocumentService;
 import com.dijo.document.DocumentType;
 import com.dijo.security.HomeView;
 import com.vaadin.browserless.SpringBrowserlessTest;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridSortOrder;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.data.provider.SortDirection;
+import com.vaadin.flow.component.html.Section;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.TabSheet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * UC-004 View Documents: the client's "My Documents" page (Main Flow steps
- * 1–4, AF-1, AF-2, BR-01 to BR-03).
+ * UC-004 View Documents: the client's "My Documents" page, grouped into
+ * Filings / Financials / Computations / Misc tabs and by financial year
+ * (Main Flow steps 1–5, AF-1 to AF-3, BR-01 to BR-05).
  */
 @SpringBootTest
 class ViewDocumentsViewTest extends SpringBrowserlessTest {
@@ -45,9 +49,41 @@ class ViewDocumentsViewTest extends SpringBrowserlessTest {
         SecurityContextHolder.clearContext();
     }
 
-    @SuppressWarnings("unchecked")
-    private Grid<DocumentSummary> grid() {
-        return $(Grid.class).single();
+    private TabSheet tabs() {
+        return $(TabSheet.class).single();
+    }
+
+    /** Tab captions as "Label count", in order. */
+    private List<String> tabCaptions() {
+        return DocumentGroupOrder.ALL.stream().map(g -> {
+            Tab tab = test(tabs()).getTab(g.ordinal());
+            List<Span> spans = $(Span.class, tab).all();
+            return spans.get(0).getText() + " " + spans.get(1).getText();
+        }).toList();
+    }
+
+    private void open(DocumentGroup group) {
+        test(tabs()).select(group.ordinal());
+    }
+
+    /** Content of the selected tab (other tabs' content may stay attached, hidden). */
+    private com.vaadin.flow.component.Component openTab() {
+        int selected = tabs().getSelectedIndex();
+        return test(tabs()).getTabContent(selected);
+    }
+
+    /** Year headings in the open tab, top to bottom. */
+    private List<String> yearHeadings() {
+        return $(H3.class, openTab()).all().stream().filter(h -> h.hasClassName("my-documents__year")).map(H3::getText).toList();
+    }
+
+    /** Document types listed under one year heading in the open tab, top to bottom. */
+    private List<String> typesIn(String yearHeading) {
+        Section section = $(Section.class, openTab()).all().stream()
+                .filter(s -> $(H3.class, s).single().getText().equals(yearHeading))
+                .findFirst().orElseThrow();
+        return $(Span.class, section).all().stream()
+                .filter(s -> s.hasClassName("my-documents__item-type")).map(Span::getText).toList();
     }
 
     @Test
@@ -62,35 +98,71 @@ class ViewDocumentsViewTest extends SpringBrowserlessTest {
     }
 
     @Test
-    void mainFlow_tableShowsTheRequiredColumnsMostRecentFirst() {
+    void step2_groupTabsInOrderWithCounts() {
         String pan = DocumentFixtures.createClient(clientService, "Acme Traders Pvt Ltd");
-        DocumentFixtures.upload(documentService, pan, DocumentType.IT_ACKNOWLEDGEMENT, 2024, 2023);
-        Document latest = DocumentFixtures.upload(documentService, pan, DocumentType.BALANCE_SHEET, 2025, 2024);
+        DocumentFixtures.upload(documentService, pan, DocumentType.IT_ACKNOWLEDGEMENT, 2025, 2024);
+        DocumentFixtures.upload(documentService, pan, DocumentType.BALANCE_SHEET, 2025, 2024);
+        DocumentFixtures.upload(documentService, pan, DocumentType.TAX_AUDIT_REPORT, 2025, 2024);
+        DocumentFixtures.upload(documentService, pan, DocumentType.MISC_REPORT, 2025, 2024);
         DocumentFixtures.signInAs(pan, "CLIENT");
 
         navigate(ClientDashboardView.class);
 
-        Grid<DocumentSummary> grid = grid();
-        // Step 2: columns
-        assertEquals(List.of("Document Type", "Assessment Year", "Financial Year", "Upload Date"),
-                grid.getColumns().stream().filter(c -> c.isVisible()).map(c -> c.getHeaderText())
-                        .filter(h -> h != null && !h.isEmpty()).toList());
-        assertEquals(2, test(grid).size());
-        // BR-02 / BR-03: newest first, with the uploaded metadata
-        assertEquals("Balance Sheet", test(grid).getCellText(0, 0));
-        assertEquals("2025", test(grid).getCellText(0, 1));
-        assertEquals("2024", test(grid).getCellText(0, 2));
-        String expectedDate = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
-                .withZone(ZoneId.systemDefault()).format(latest.getUploadedAt());
-        assertEquals(expectedDate, test(grid).getCellText(0, 3));
-        assertEquals("IT Acknowledgement", test(grid).getCellText(1, 0));
-        // BR-02: the default sort is visible on the Upload Date column
-        List<GridSortOrder<DocumentSummary>> sort = grid.getSortOrder();
-        assertEquals("Upload Date", sort.get(0).getSorted().getHeaderText());
-        assertEquals(SortDirection.DESCENDING, sort.get(0).getDirection());
+        assertEquals(List.of("Filings 1", "Financials 2", "Computations 0", "Misc 1"), tabCaptions());
         // Header names the client
         assertTrue($(Paragraph.class).all().stream()
                 .anyMatch(p -> p.getText().contains("Acme Traders Pvt Ltd (PAN " + pan + ")")));
+    }
+
+    @Test
+    void mainFlow_groupShowsFinancialYearsLatestFirstWithDocumentDetails() {
+        String pan = DocumentFixtures.createClient(clientService, "Acme Traders Pvt Ltd");
+        DocumentFixtures.upload(documentService, pan, DocumentType.BALANCE_SHEET, 2024, 2023);
+        DocumentFixtures.upload(documentService, pan, DocumentType.PROFIT_LOSS, 2025, 2024);
+        Document latest = DocumentFixtures.upload(documentService, pan, DocumentType.AUDIT_REPORT, 2025, 2024);
+        DocumentFixtures.upload(documentService, pan, DocumentType.IT_ACKNOWLEDGEMENT, 2025, 2024);
+        DocumentFixtures.signInAs(pan, "CLIENT");
+        navigate(ClientDashboardView.class);
+
+        open(DocumentGroup.FINANCIALS);
+
+        // BR-05: latest financial year first
+        assertEquals(List.of("FY 2024-25", "FY 2023-24"), yearHeadings());
+        // BR-02: most recent upload first within a year; BR-04: only this group's types
+        assertEquals(List.of("Audit Report", "Profit & Loss"), typesIn("FY 2024-25"));
+        assertEquals(List.of("Balance Sheet"), typesIn("FY 2023-24"));
+        // BR-03: assessment year and upload date as uploaded
+        String expectedDate = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
+                .withZone(ZoneId.systemDefault()).format(latest.getUploadedAt());
+        assertTrue($(Span.class, openTab()).all().stream().anyMatch(s -> s.hasClassName("my-documents__item-meta")
+                && s.getText().equals("AY 2025-26 · Uploaded " + expectedDate)));
+        // UC-005: every document has a Download link
+        assertEquals(3, $(Anchor.class, openTab()).all().stream().filter(a -> a.hasClassName("my-documents__download")).count());
+    }
+
+    @Test
+    void opensOnTheFirstGroupThatHasDocuments() {
+        String pan = DocumentFixtures.createClient(clientService, "Acme Traders Pvt Ltd");
+        DocumentFixtures.upload(documentService, pan, DocumentType.TAX_COMPUTATION, 2025, 2024);
+        DocumentFixtures.signInAs(pan, "CLIENT");
+
+        navigate(ClientDashboardView.class);
+
+        assertTrue(test(tabs()).isSelected(DocumentGroup.COMPUTATIONS.ordinal()));
+        assertEquals(List.of("Tax Computation"), typesIn("FY 2024-25"));
+    }
+
+    @Test
+    void af3_emptyGroupSaysSo() {
+        String pan = DocumentFixtures.createClient(clientService, "Acme Traders Pvt Ltd");
+        DocumentFixtures.upload(documentService, pan, DocumentType.IT_ACKNOWLEDGEMENT, 2025, 2024);
+        DocumentFixtures.signInAs(pan, "CLIENT");
+        navigate(ClientDashboardView.class);
+
+        open(DocumentGroup.COMPUTATIONS);
+
+        assertEquals("No computations yet.", $(Paragraph.class, openTab()).single().getText());
+        assertTrue(yearHeadings().isEmpty());
     }
 
     @Test
@@ -99,12 +171,13 @@ class ViewDocumentsViewTest extends SpringBrowserlessTest {
         String other = DocumentFixtures.createClient(clientService, "Other Co");
         DocumentFixtures.upload(documentService, mine, DocumentType.AUDIT_REPORT, 2025, 2024);
         DocumentFixtures.upload(documentService, other, DocumentType.PROFIT_LOSS, 2025, 2024);
+        DocumentFixtures.upload(documentService, other, DocumentType.IT_ACKNOWLEDGEMENT, 2025, 2024);
         DocumentFixtures.signInAs(mine, "CLIENT");
 
         navigate(ClientDashboardView.class);
 
-        assertEquals(1, test(grid()).size());
-        assertEquals("Audit Report", test(grid()).getCellText(0, 0));
+        assertEquals(List.of("Filings 0", "Financials 1", "Computations 0", "Misc 0"), tabCaptions());
+        assertEquals(List.of("Audit Report"), typesIn("FY 2024-25"));
     }
 
     @Test
@@ -117,7 +190,8 @@ class ViewDocumentsViewTest extends SpringBrowserlessTest {
         assertEquals("No documents available yet. Check back soon.", $(H3.class).single().getText());
         assertTrue($(Paragraph.class).all().stream()
                 .anyMatch(p -> p.getText().contains("please contact your consultant")));
-        assertTrue($(Grid.class).all().isEmpty());
+        assertTrue($(TabSheet.class).all().isEmpty());
+        assertTrue($(Div.class).all().stream().anyMatch(d -> d.hasClassName("my-documents__empty")));
     }
 
     @Test
@@ -131,5 +205,10 @@ class ViewDocumentsViewTest extends SpringBrowserlessTest {
         }
 
         assertFalse(getCurrentView() instanceof ClientDashboardView);
+    }
+
+    /** The groups in tab order. */
+    private static final class DocumentGroupOrder {
+        static final List<DocumentGroup> ALL = List.of(DocumentGroup.values());
     }
 }

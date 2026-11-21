@@ -105,7 +105,7 @@ Client clicks the "Download" button next to a document in their document list.
 | Page | Access |
 |------|--------|
 | Client Dashboard / My Documents page (`/documents`) | Authenticated Client only |
-| Document list with a Download link on every row (icon only on phones) | Authenticated Client only |
+| My Documents (grouped by kind and financial year, UC-004) with a Download link on every document (icon only on phones) | Authenticated Client only |
 | Error notification for failed downloads (top of the page) | Authenticated Client only |
 
 **Implementation notes:**

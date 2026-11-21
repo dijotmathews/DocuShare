@@ -32,7 +32,8 @@
 - **Client.clientName:** mandatory in the form (max 200 characters). The column is nullable so existing databases could add it; clients created before it existed show a blank name until edited.
 - **Document.documentIdentifier:** the stored file's name inside `location`. `(location, documentIdentifier)` is unique.
 - **Document.location:** folder relative to the document store root (`app.documents.root`), e.g. `ABCDE1234F/2025`.
-- **Document.assessmentYear / financialYear:** 4-digit years.
+- **Document.assessmentYear / financialYear:** 4-digit years; the year the period starts in (financialYear 2024 = FY 2024-25, assessmentYear 2025 = AY 2025-26).
+- **Document.documentType → group:** each type belongs to one group shown to the client (Filings, Financials, Computations, Misc); the mapping is in code (`DocumentType.group()`), not stored.
 
 ## Document Types
 

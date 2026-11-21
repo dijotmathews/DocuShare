@@ -341,15 +341,59 @@
 
 /* ---------- UC-004: My documents (client) ---------- */
 
-.my-documents__grid {
+.my-documents__tabs {
   max-width: 60rem;
+}
+
+.my-documents__tab-count {
+  margin-inline-start: var(--vaadin-gap-xs);
+  padding: 0 var(--vaadin-padding-xs);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--vaadin-background-container);
+  font-size: var(--aura-font-size-xs);
+  color: var(--vaadin-text-color-secondary);
+}
+
+.my-documents__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vaadin-gap-l);
+}
+
+.my-documents__group-empty {
+  margin: 0;
+  color: var(--vaadin-text-color-secondary);
+}
+
+.my-documents__year {
+  margin: 0 0 var(--vaadin-gap-s);
+  font-size: var(--aura-font-size-m);
+  font-weight: var(--aura-font-weight-semibold);
+}
+
+.my-documents__list {
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color);
+}
+
+.my-documents__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vaadin-gap-m);
+  padding: var(--vaadin-padding-s) var(--vaadin-padding-m);
+}
+
+.my-documents__row + .my-documents__row {
+  border-top: 1px solid var(--vaadin-border-color-secondary);
 }
 
 .my-documents__item {
   display: flex;
   flex-direction: column;
   gap: var(--vaadin-gap-xs);
-  padding-block: var(--vaadin-padding-xs);
+  min-width: 0;
 }
 
 .my-documents__item-type {
@@ -374,7 +418,7 @@
   text-decoration: underline;
 }
 
-/* Phones: icon only, next to the compact summary column */
+/* Phones: icon only, next to the document details */
 @media (max-width: 639px) {
   .my-documents__download-text {
     position: absolute;
