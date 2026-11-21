@@ -34,10 +34,10 @@ Client navigates to the "My Documents" or dashboard page after login.
 ## Main Flow
 
 1. [System] retrieves all Documents associated with the logged-in client's PAN number.
-2. [System] shows one tab per group, in this order: Filings, Financials, Computations, Misc, each with the number of documents in it (BR-04). The first group that has documents is open.
-3. [System] inside the open group, shows one section per financial year, latest first, headed e.g. "FY 2024-25" (BR-05).
+2. [System] shows a side nav with one item per group, in this order: Filings, Financials, Computations, Misc, each with the number of documents in it (BR-04). The first group that has documents is shown.
+3. [System] next to the side nav, shows the selected group's documents in one section per financial year, latest first, headed e.g. "FY 2024-25" (BR-05).
 4. [System] in each financial year, lists the documents with their Document Type, Assessment Year and Upload Date, most recent first (BR-02), each with a Download link (UC-005).
-5. [Actor] opens another group to see its documents.
+5. [Actor] picks another group in the side nav to see its documents.
 
 ---
 
@@ -63,9 +63,9 @@ Client navigates to the "My Documents" or dashboard page after login.
 ### AF-3: Group Has No Documents
 
 **Branches from:** Main Flow step 5
-**Condition:** The client opens a group with no documents (its tab shows 0).
+**Condition:** The client picks a group with no documents (its side nav item shows 0).
 
-1. [System] displays "No {group} yet." (e.g. "No computations yet.") in that tab.
+1. [System] displays "No {group} yet." (e.g. "No computations yet.") under the group title.
 2. Returns to Main Flow step 5.
 
 ---
@@ -104,10 +104,10 @@ Client navigates to the "My Documents" or dashboard page after login.
 | Page | Access |
 |------|--------|
 | Client Dashboard / My Documents page (`/documents`; clients land here after login) | Authenticated Client only |
-| Group tabs: Filings, Financials, Computations, Misc, with counts (same page) | Authenticated Client only |
-| Financial-year sections inside each tab, with a Download link per document | Authenticated Client only |
-| Empty group message (inside a tab with no documents) | Authenticated Client only |
-| Empty state message (same page, shown instead of the tabs) | Authenticated Client (no documents) |
+| Group side nav: Filings, Financials, Computations, Misc, with counts; each group has its own page (`/documents/filings`, `/documents/financials`, `/documents/computations`, `/documents/misc`) | Authenticated Client only |
+| Financial-year sections for the selected group, with a Download link per document | Authenticated Client only |
+| Empty group message (for a group with no documents) | Authenticated Client only |
+| Empty state message (`/documents`, shown instead of the side nav) | Authenticated Client (no documents) |
 
 **Implementation notes:**
 - The PAN always comes from the signed-in account, never from the request, so a client can't ask for another PAN's documents (BR-01).
@@ -115,4 +115,5 @@ Client navigates to the "My Documents" or dashboard page after login.
 - Each document shows its type, then "AY 2025-26 · Uploaded 12 Jul 2025, 10:30". The financial year is the section heading, so it isn't repeated per document. Upload Date is in the server's time zone.
 - Assessment Year is written the same way as the financial year (stored 2025 → "AY 2025-26").
 - AF-1 and AF-2 share one empty state: the AF-1 message plus text suggesting the client contact their consultant (no consultant contact details are stored yet).
-- On phones (< 640px) the Download link shows only its icon (it keeps its "Download …" label for screen readers) and the tab bar scrolls sideways.
+- `/documents` (where clients land after login) and unknown group names forward to the first group that has documents, so the address always names the group shown; back/forward and bookmarks work per group.
+- On phones (< 640px) the side nav sits above the documents, and the Download link shows only its icon (it keeps its "Download …" label for screen readers).

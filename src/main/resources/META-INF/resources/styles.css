@@ -341,17 +341,50 @@
 
 /* ---------- UC-004: My documents (client) ---------- */
 
-.my-documents__tabs {
-  max-width: 60rem;
+/* Group side nav on the left, the group's documents on the right */
+.my-documents__layout {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: var(--vaadin-gap-xl);
+  align-items: start;
+  max-width: 64rem;
 }
 
-.my-documents__tab-count {
-  margin-inline-start: var(--vaadin-gap-xs);
+.my-documents__nav {
+  position: sticky;
+  top: var(--vaadin-padding-m);
+  padding: var(--vaadin-padding-xs);
+  border: 1px solid var(--vaadin-border-color-secondary);
+  border-radius: var(--vaadin-radius-l);
+  background: var(--aura-surface-color);
+}
+
+.my-documents__nav-count {
+  min-width: 1.5em;
   padding: 0 var(--vaadin-padding-xs);
   border-radius: var(--vaadin-radius-l);
   background: var(--vaadin-background-container);
   font-size: var(--aura-font-size-xs);
+  text-align: center;
   color: var(--vaadin-text-color-secondary);
+}
+
+/* Phones: the side nav sits above the documents */
+@media (max-width: 639px) {
+  .my-documents__layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--vaadin-gap-l);
+  }
+
+  .my-documents__nav {
+    position: static;
+  }
+}
+
+.my-documents__group-title {
+  margin: 0;
+  font-size: var(--aura-font-size-l);
+  font-weight: var(--aura-font-weight-semibold);
 }
 
 .my-documents__group {

@@ -12,6 +12,7 @@ import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Section;
@@ -19,8 +20,12 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.tabs.Tab;
-import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.sidenav.SideNav;
+import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.RouteConfiguration;
+import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
@@ -29,26 +34,34 @@ import jakarta.annotation.security.RolesAllowed;
 
 import java.time.Clock;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+import java.util.Optional;
 
 /**
  * UC-004: the client's "My Documents" page, shown after login (UC-002). The
- * documents uploaded for the signed-in client's PAN are shown in tabs per
- * group (Filings, Financials, Computations, Misc), and inside each tab by
+ * documents uploaded for the signed-in client's PAN are grouped (Filings,
+ * Financials, Computations, Misc); a side nav picks the group, which has its
+ * own URL (/documents/financials), and the group's documents are shown by
  * financial year, latest first. Only accessible to users with role CLIENT.
  */
-@Route(value = ClientDashboardView.ROUTE, autoLayout = false)
+@Route(value = ClientDashboardView.ROUTE + "/:" + ClientDashboardView.GROUP_PARAMETER + "?", autoLayout = false)
 @PageTitle("My Documents | DocuShare")
 @RolesAllowed("CLIENT")
-public class ClientDashboardView extends Main {
+public class ClientDashboardView extends Main implements BeforeEnterObserver {
 
     public static final String ROUTE = "documents";
+    static final String GROUP_PARAMETER = "group";
     static final String EMPTY_MESSAGE = "No documents available yet. Check back soon.";
 
     private static final DateTimeFormatter UPLOAD_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
     private final ClientDocumentService clientDocumentService;
     private final DateTimeFormatter uploadDate;
+
+    private final Paragraph intro = new Paragraph();
+    /** Everything below the intro; rebuilt on every visit, including when only the group changes. */
+    private final Div body = new Div();
+    private MyDocuments mine;
 
     public ClientDashboardView(AuthenticationContext authenticationContext,
                                ClientDocumentService clientDocumentService, Clock clock) {
@@ -56,65 +69,87 @@ public class ClientDashboardView extends Main {
         this.uploadDate = UPLOAD_DATE.withZone(clock.getZone());
         addClassName("dashboard");
 
-        MyDocuments mine = clientDocumentService.findMyDocuments();
-
         H2 title = new H2("My Documents");
-        String who = mine.clientName() == null ? "PAN " + mine.panNumber()
-                : mine.clientName() + " (PAN " + mine.panNumber() + ")";
-        Paragraph intro = new Paragraph("Tax documents uploaded by your consultant for " + who + ".");
         intro.addClassName("dashboard__intro");
+        body.addClassName("my-documents__body");
 
-        Div content = new Div(title, intro);
+        Div content = new Div(title, intro, body);
         content.addClassNames("dashboard__content", "my-documents");
-        content.add(mine.documents().isEmpty() ? emptyState() : groupTabs(mine));
 
         add(new AppHeader(authenticationContext), content);
     }
 
-    /** Step 2: one tab per group, with the number of documents in it. */
-    private TabSheet groupTabs(MyDocuments mine) {
-        TabSheet tabs = new TabSheet();
-        tabs.addClassName("my-documents__tabs");
-        Tab firstWithDocuments = null;
+    /** Shows the group named in the URL; without one, the first group that has documents. */
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        mine = clientDocumentService.findMyDocuments();
+        String who = mine.clientName() == null ? "PAN " + mine.panNumber()
+                : mine.clientName() + " (PAN " + mine.panNumber() + ")";
+        intro.setText("Tax documents uploaded by your consultant for " + who + ".");
+        body.removeAll();
+
+        if (mine.documents().isEmpty()) {
+            body.add(emptyState());
+            return;
+        }
+        Optional<DocumentGroup> requested = event.getRouteParameters().get(GROUP_PARAMETER)
+                .flatMap(DocumentGroup::fromSlug);
+        if (requested.isEmpty()) {
+            DocumentGroup first = Arrays.stream(DocumentGroup.values())
+                    .filter(g -> mine.count(g) > 0).findFirst().orElseThrow();
+            event.forwardTo(ClientDashboardView.class, new RouteParameters(GROUP_PARAMETER, first.slug()));
+            return;
+        }
+        DocumentGroup group = requested.get();
+        Div layout = new Div(groupNav(), groupContent(group, mine.byFinancialYear(group)));
+        layout.addClassName("my-documents__layout");
+        body.add(layout);
+    }
+
+    /** Step 2: side nav with one item per group and the number of documents in it. */
+    private Component groupNav() {
+        SideNav nav = new SideNav();
+        nav.addClassName("my-documents__nav");
+        nav.setLabel("Document groups");
         for (DocumentGroup group : DocumentGroup.values()) {
             int count = mine.count(group);
+            SideNavItem item = new SideNavItem(group.label(),
+                    RouteConfiguration.forSessionScope().getUrl(ClientDashboardView.class,
+                            new RouteParameters(GROUP_PARAMETER, group.slug())));
             Span badge = new Span(String.valueOf(count));
-            badge.addClassName("my-documents__tab-count");
+            badge.addClassName("my-documents__nav-count");
             badge.getElement().setAttribute("aria-label", count == 1 ? "1 document" : count + " documents");
-            Tab tab = new Tab(new Span(group.label()), badge);
-            tab.setId("tab-" + group.name().toLowerCase(Locale.ROOT));
-            tabs.add(tab, groupContent(group, mine.byFinancialYear(group)));
-            if (firstWithDocuments == null && count > 0) {
-                firstWithDocuments = tab;
-            }
+            item.setSuffixComponent(badge);
+            nav.addItem(item);
         }
-        // Open on the first group that has something to show
-        tabs.setSelectedTab(firstWithDocuments);
-        return tabs;
+        return nav;
     }
 
     /** Step 3: a group's documents, one section per financial year, latest first. */
     private Component groupContent(DocumentGroup group, List<FinancialYearDocuments> years) {
-        Div content = new Div();
-        content.addClassName("my-documents__group");
+        Section groupSection = new Section();
+        groupSection.addClassName("my-documents__group");
+        H3 groupTitle = new H3(group.label());
+        groupTitle.addClassName("my-documents__group-title");
+        groupSection.add(groupTitle);
         if (years.isEmpty()) {
             Paragraph empty = new Paragraph(group.emptyMessage());
             empty.addClassName("my-documents__group-empty");
-            content.add(empty);
-            return content;
+            groupSection.add(empty);
+            return groupSection;
         }
         for (FinancialYearDocuments year : years) {
-            H3 heading = new H3("FY " + yearRange(year.financialYear()));
+            H4 heading = new H4("FY " + yearRange(year.financialYear()));
             heading.addClassName("my-documents__year");
             Div list = new Div();
             list.addClassName("my-documents__list");
             list.getElement().setAttribute("role", "list");
             year.documents().forEach(d -> list.add(documentRow(d)));
-            Section section = new Section(heading, list);
-            section.addClassName("my-documents__year-section");
-            content.add(section);
+            Div yearSection = new Div(heading, list);
+            yearSection.addClassName("my-documents__year-section");
+            groupSection.add(yearSection);
         }
-        return content;
+        return groupSection;
     }
 
     /** One document: type, assessment year and upload date, and its Download link (UC-005). */

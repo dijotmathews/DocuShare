@@ -23,7 +23,17 @@ public enum DocumentGroup {
         return label;
     }
 
-    /** Message shown on a group's tab when it has no documents. */
+    /** URL segment of the group's page, e.g. "financials" in /documents/financials. */
+    public String slug() {
+        return name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** The group with this URL segment, if any. */
+    public static java.util.Optional<DocumentGroup> fromSlug(String slug) {
+        return java.util.Arrays.stream(values()).filter(g -> g.slug().equals(slug)).findFirst();
+    }
+
+    /** Message shown for a group that has no documents. */
     public String emptyMessage() {
         return "No " + noun + " yet.";
     }
