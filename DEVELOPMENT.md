@@ -21,7 +21,12 @@ DB_PATH=demo.db DOCUMENTS_ROOT=demo-documents ./mvnw spring-boot:run -Dspring-bo
 
 On first start this creates **Demo Traders Pvt Ltd** (PAN `DEMOC1234D`) with one document of every type for each of
 the last three completed financial years: 21 small PDFs, so Filings, Financials, Computations and Misc each have
-documents in three financial years. Starting again with the same database adds nothing.
+documents in three financial years. Upload dates are backdated to when each kind of document is typically uploaded,
+in the year after its financial year: Misc in June, Balance Sheet and Profit & Loss in mid August, Audit Report in
+early September, Tax Audit Report in late September, Tax Computation in mid October and IT Acknowledgement in late
+October. Dates that would still be in the future (for a financial year that ended recently) become the last few hours
+before startup instead, in the same order. Starting again with the same database adds nothing; to refresh the demo
+(for example to get the new dates), delete the demo database and documents folder first.
 
 | Sign in as | Where | Username | Password |
 |------------|-------|----------|----------|
