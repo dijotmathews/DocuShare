@@ -22,3 +22,6 @@ node_modules/
 src/main/frontend/generated/
 src/main/bundles/
 vite.generated.ts
+
+# Demo data (see DEVELOPMENT.md)
+demo-documents/
