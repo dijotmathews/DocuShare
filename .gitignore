@@ -25,3 +25,4 @@ vite.generated.ts
 
 # Demo data (see DEVELOPMENT.md)
 demo-documents/
+/demo-video/
