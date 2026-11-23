@@ -70,6 +70,16 @@ Client clicks the "Download" button next to a document in their document list.
 2. [System] logs the error for technical review.
 3. Use case ends.
 
+### AF-4: Print Document
+
+**Branches from:** Main Flow step 1
+**Condition:** The client clicks "Print" (right next to "Download") instead of "Download". Shown only for files the browser can display: PDF, PNG, JPEG, GIF, WebP and plain text (BR-05).
+
+1. [System] verifies ownership and retrieves the document as in steps 2–3 (AF-1 to AF-3 apply, with the same messages).
+2. [System] sends the file for display rather than saving (`Content-Disposition: inline`) and logs the access as in step 5.
+3. [System] opens the browser's print dialog for the document, staying on My Documents. On Safari and touch devices, or when a modifier key is held, the document opens in a new tab instead, to print from there.
+4. Use case ends.
+
 ---
 
 ## Postconditions
@@ -87,6 +97,7 @@ Client clicks the "Download" button next to a document in their document list.
 | BR-02 | All download attempts must be logged for audit and security purposes |
 | BR-03 | Downloaded files must retain their original metadata and naming conventions |
 | BR-04 | Only authenticated clients can initiate downloads |
+| BR-05 | Printing is offered only for file types a browser can display; it goes through the same checks and audit as a download |
 
 ---
 
@@ -96,7 +107,8 @@ Client clicks the "Download" button next to a document in their document list.
 - [x] AF-1 (document not found) covered
 - [x] AF-2 (unauthorized access attempt) covered
 - [x] AF-3 (file read error) covered
-- [x] BR-01, BR-02, BR-03, BR-04 covered
+- [x] AF-4 (print) covered
+- [x] BR-01, BR-02, BR-03, BR-04, BR-05 covered
 
 ---
 
@@ -105,7 +117,7 @@ Client clicks the "Download" button next to a document in their document list.
 | Page | Access |
 |------|--------|
 | Client Dashboard / My Documents page (`/documents`) | Authenticated Client only |
-| My Documents (side nav of groups, documents by financial year, UC-004) with a Download link on every document (icon only on phones) | Authenticated Client only |
+| My Documents (side nav of groups, documents by financial year, UC-004) with Download and Print links on every document, Print right after Download (both icon only on phones) | Authenticated Client only |
 | Error notification for failed downloads (top of the page) | Authenticated Client only |
 
 **Implementation notes:**
@@ -113,4 +125,5 @@ Client clicks the "Download" button next to a document in their document list.
 - A request for a document id that doesn't exist is treated like AF-2 (same message), so ids can't be probed.
 - Every attempt is stored in the `download_audit` table with time, user, document id, document PAN, file name and outcome (SUCCESS, NOT_FOUND, ACCESS_DENIED, READ_ERROR). Denied attempts are also written to the `com.dijo.security.audit` log at WARN; read errors are logged at ERROR with the cause (AF-3 step 2).
 - Users who aren't signed-in clients (admins, anonymous) are rejected by method security before reaching the download and don't create audit rows; they can't see the Download links in the UI.
+- Print fetches the file and shows it in a hidden frame from a blob URL, then calls the frame's `print()`. A blob URL is used because the app sends `X-Frame-Options: DENY`, which stops its own responses from being framed. A print is recorded in `download_audit` exactly like a download (there is no separate outcome for it).
 - The file keeps its original name; the content type is detected from the file (unknown types are sent as `application/octet-stream`).

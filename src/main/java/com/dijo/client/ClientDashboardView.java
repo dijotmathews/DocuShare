@@ -9,6 +9,7 @@ import com.dijo.document.DocumentGroup;
 import com.dijo.ui.AppHeader;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.AnchorTarget;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -28,6 +29,8 @@ import com.vaadin.flow.router.RouteConfiguration;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.streams.DownloadEvent;
+import com.vaadin.flow.component.html.AttachmentType;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.RolesAllowed;
@@ -36,7 +39,9 @@ import java.time.Clock;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * UC-004: the client's "My Documents" page, shown after login (UC-002). The
@@ -53,6 +58,60 @@ public class ClientDashboardView extends Main implements BeforeEnterObserver {
     public static final String ROUTE = "documents";
     static final String GROUP_PARAMETER = "group";
     static final String EMPTY_MESSAGE = "No documents available yet. Check back soon.";
+
+    /** File types a browser can open and print itself; other files get no Print link. */
+    private static final Set<String> PRINTABLE_EXTENSIONS = Set.of("pdf", "png", "jpg", "jpeg", "gif", "webp", "txt");
+
+    /**
+     * Print link click: fetches the file, shows it in a hidden frame and opens
+     * the browser's print dialog for it. The frame loads a blob URL, as the
+     * app's pages may not be framed (X-Frame-Options: DENY). Where printing
+     * from a frame is unreliable (Safari, touch devices) or a modifier key is
+     * held, the link's default applies instead: the file opens in a new tab,
+     * to print from there. A failed fetch is reported by the server (the same
+     * notification as for Download).
+     */
+    private static final String PRINT_ON_CLICK = """
+            const link = this;
+            link.addEventListener('click', async e => {
+              const ua = navigator.userAgent;
+              const safari = /safari/i.test(ua) && !/chrome|chromium|crios|android/i.test(ua);
+              if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey
+                  || safari || matchMedia('(pointer: coarse)').matches) {
+                return;
+              }
+              e.preventDefault();
+              let response;
+              try {
+                response = await fetch(link.href, { credentials: 'same-origin' });
+              } catch (err) {
+                return;
+              }
+              if (!response.ok) {
+                return;
+              }
+              const url = URL.createObjectURL(await response.blob());
+              document.querySelectorAll('iframe.my-documents__print-frame').forEach(f => {
+                URL.revokeObjectURL(f.src);
+                f.remove();
+              });
+              const frame = document.createElement('iframe');
+              frame.className = 'my-documents__print-frame';
+              frame.title = 'Document to print';
+              frame.tabIndex = -1;
+              frame.setAttribute('aria-hidden', 'true');
+              frame.onload = () => {
+                try {
+                  frame.contentWindow.focus();
+                  frame.contentWindow.print();
+                } catch (err) {
+                  window.open(url, '_blank', 'noopener');
+                }
+              };
+              frame.src = url;
+              document.body.appendChild(frame);
+            });
+            """;
 
     private static final DateTimeFormatter UPLOAD_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
     private final ClientDocumentService clientDocumentService;
@@ -152,7 +211,7 @@ public class ClientDashboardView extends Main implements BeforeEnterObserver {
         return groupSection;
     }
 
-    /** One document: type, assessment year and upload date, and its Download link (UC-005). */
+    /** One document: type, assessment year and upload date, and its Download and Print links (UC-005). */
     private Component documentRow(DocumentSummary document) {
         Span type = new Span(document.documentType().label());
         type.addClassName("my-documents__item-type");
@@ -161,7 +220,12 @@ public class ClientDashboardView extends Main implements BeforeEnterObserver {
         meta.addClassName("my-documents__item-meta");
         Div text = new Div(type, meta);
         text.addClassName("my-documents__item");
-        Div row = new Div(text, downloadLink(document));
+        Div actions = new Div(downloadLink(document));
+        actions.addClassName("my-documents__actions");
+        if (isPrintable(document)) {
+            actions.add(printLink(document));
+        }
+        Div row = new Div(text, actions);
         row.addClassName("my-documents__row");
         row.getElement().setAttribute("role", "listitem");
         return row;
@@ -172,12 +236,48 @@ public class ClientDashboardView extends Main implements BeforeEnterObserver {
         return startYear + "-" + String.format("%02d", (startYear + 1) % 100);
     }
 
-    /** UC-005 step 1: link that streams the file; failures are reported in a notification. */
+    /** UC-005 step 1: link that saves the file; failures are reported in a notification. */
     private Anchor downloadLink(DocumentSummary document) {
-        DownloadHandler handler = event -> {
+        Anchor link = new Anchor(fileHandler(document, false), "");
+        link.addClassName("my-documents__download");
+        Span text = new Span("Download");
+        text.addClassName("my-documents__download-text");
+        link.add(VaadinIcon.DOWNLOAD_ALT.create(), text);
+        link.getElement().setAttribute("aria-label", "Download " + document.documentType().label()
+                + ", assessment year " + document.assessmentYear());
+        return link;
+    }
+
+    /**
+     * UC-005 AF-4: link that opens the browser's print dialog for the file. It
+     * fetches the file the same way as Download (same access check and audit
+     * entry), but for display rather than saving.
+     */
+    private Anchor printLink(DocumentSummary document) {
+        Anchor link = new Anchor(fileHandler(document, true), AttachmentType.INLINE, "");
+        link.setTarget(AnchorTarget.BLANK);
+        link.addClassName("my-documents__print");
+        Span text = new Span("Print");
+        text.addClassName("my-documents__download-text");
+        link.add(VaadinIcon.PRINT.create(), text);
+        link.getElement().setAttribute("aria-label", "Print " + document.documentType().label()
+                + ", assessment year " + document.assessmentYear());
+        link.getElement().executeJs(PRINT_ON_CLICK);
+        return link;
+    }
+
+    static boolean isPrintable(DocumentSummary document) {
+        String name = document.fileName() == null ? "" : document.fileName();
+        int dot = name.lastIndexOf('.');
+        return dot >= 0 && PRINTABLE_EXTENSIONS.contains(name.substring(dot + 1).toLowerCase(Locale.ROOT));
+    }
+
+    /** Streams the file as an attachment (Download) or inline (Print). */
+    private DownloadHandler fileHandler(DocumentSummary document, boolean inline) {
+        return event -> {
             try {
                 clientDocumentService.download(document.id(), (fileName, contentType, size) -> {
-                    event.setFileName(fileName);
+                    disposition(event, fileName, inline);
                     event.setContentType(contentType);
                     event.setContentLength(size);
                     return event.getOutputStream();
@@ -188,14 +288,14 @@ public class ClientDashboardView extends Main implements BeforeEnterObserver {
                 event.getUI().access(() -> showDownloadError(ex.getMessage()));
             }
         };
-        Anchor link = new Anchor(handler, "");
-        link.addClassName("my-documents__download");
-        Span text = new Span("Download");
-        text.addClassName("my-documents__download-text");
-        link.add(VaadinIcon.DOWNLOAD_ALT.create(), text);
-        link.getElement().setAttribute("aria-label", "Download " + document.documentType().label()
-                + ", assessment year " + document.assessmentYear());
-        return link;
+    }
+
+    private static void disposition(DownloadEvent event, String fileName, boolean inline) {
+        if (inline) {
+            event.inline(fileName);
+        } else {
+            event.setFileName(fileName);
+        }
     }
 
     static void showDownloadError(String message) {

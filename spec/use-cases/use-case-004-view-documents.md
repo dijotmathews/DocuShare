@@ -36,7 +36,7 @@ Client navigates to the "My Documents" or dashboard page after login.
 1. [System] retrieves all Documents associated with the logged-in client's PAN number.
 2. [System] shows a side nav with one item per group, in this order: Filings, Financials, Computations, Misc, each with the number of documents in it (BR-04). The first group that has documents is shown.
 3. [System] next to the side nav, shows the selected group's documents in one section per financial year, latest first, headed e.g. "FY 2024-25" (BR-05).
-4. [System] in each financial year, lists the documents with their Document Type, Assessment Year and Upload Date, most recent first (BR-02), each with a Download link (UC-005).
+4. [System] in each financial year, lists the documents with their Document Type, Assessment Year and Upload Date, most recent first (BR-02), each with a Download link and, right next to it, a Print link (UC-005).
 5. [Actor] picks another group in the side nav to see its documents.
 
 ---
@@ -105,7 +105,7 @@ Client navigates to the "My Documents" or dashboard page after login.
 |------|--------|
 | Client Dashboard / My Documents page (`/documents`; clients land here after login) | Authenticated Client only |
 | Group side nav: Filings, Financials, Computations, Misc, with counts; each group has its own page (`/documents/filings`, `/documents/financials`, `/documents/computations`, `/documents/misc`) | Authenticated Client only |
-| Financial-year sections for the selected group, with a Download link per document | Authenticated Client only |
+| Financial-year sections for the selected group, with Download and Print links per document | Authenticated Client only |
 | Empty group message (for a group with no documents) | Authenticated Client only |
 | Empty state message (`/documents`, shown instead of the side nav) | Authenticated Client (no documents) |
 
@@ -116,4 +116,4 @@ Client navigates to the "My Documents" or dashboard page after login.
 - Assessment Year is written the same way as the financial year (stored 2025 → "AY 2025-26").
 - AF-1 and AF-2 share one empty state: the AF-1 message plus text suggesting the client contact their consultant (no consultant contact details are stored yet).
 - `/documents` (where clients land after login) and unknown group names forward to the first group that has documents, so the address always names the group shown; back/forward and bookmarks work per group.
-- On phones (< 640px) the side nav sits above the documents, and the Download link shows only its icon (it keeps its "Download …" label for screen readers).
+- On phones (< 640px) the side nav sits above the documents, and the Download and Print links show only their icons (they keep their "Download …" / "Print …" labels for screen readers).

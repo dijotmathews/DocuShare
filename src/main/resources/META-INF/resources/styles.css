@@ -438,7 +438,8 @@
   color: var(--vaadin-text-color-secondary);
 }
 
-.my-documents__download {
+.my-documents__download,
+.my-documents__print {
   display: inline-flex;
   align-items: center;
   gap: var(--vaadin-gap-xs);
@@ -447,7 +448,25 @@
   text-decoration: none;
 }
 
-.my-documents__download:hover .my-documents__download-text {
+.my-documents__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--vaadin-gap-l);
+}
+
+/* Holds a document while the browser's print dialog is open; kept out of sight */
+.my-documents__print-frame {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border: 0;
+}
+
+.my-documents__download:hover .my-documents__download-text,
+.my-documents__print:hover .my-documents__download-text {
   text-decoration: underline;
 }
 
