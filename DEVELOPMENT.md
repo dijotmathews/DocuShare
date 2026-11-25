@@ -53,6 +53,21 @@ admin dashboard, the PAN dropdown on Upload Documents, and filtering All Documen
 The video is written to `demo-video/docushare-demo.webm` (not committed). WebM plays in Chrome, Firefox, Edge and VLC;
 for QuickTime or PowerPoint convert it with ffmpeg: `ffmpeg -i docushare-demo.webm -c:v libx264 -pix_fmt yuv420p docushare-demo.mp4`.
 
+### Phone version
+
+`scripts/demo-video/record-demo-mobile.mjs` records the same story on a phone screen, for watching on phones: portrait
+780×1688 (a 390×844 phone at 2×), touch taps instead of a cursor, larger captions, and the Download and Print links.
+It's about 1.5 minutes and is written as an H.264 MP4, which plays on iPhone and Android and in WhatsApp.
+
+```bash
+cd scripts/demo-video
+BASE=http://localhost:8080 node record-demo-mobile.mjs ../../demo-video
+```
+
+The video is written to `demo-video/docushare-demo-mobile.mp4`. On macOS the frames are encoded by
+`encode-mp4.swift` (no ffmpeg needed; uses the Swift that comes with Xcode or its command line tools). Elsewhere the
+script leaves the frames in `demo-video/mobile-frames/` and prints the ffmpeg command that encodes them.
+
 ## Docker
 
 To build a Docker image, run:
